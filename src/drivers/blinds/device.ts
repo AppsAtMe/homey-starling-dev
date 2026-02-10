@@ -93,12 +93,6 @@ class BlindsDeviceClass extends StarlingDevice {
     }
   }
 
-  /**
-   * Called when the device is initialized
-   */
-  async onInit(): Promise<void> {
-    await super.onInit();
-  }
 }
 
 module.exports = BlindsDeviceClass;

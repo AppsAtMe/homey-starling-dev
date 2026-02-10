@@ -101,9 +101,9 @@ describe('HubManager', () => {
     );
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     // Clean up singleton after each test
-    HubManager.resetInstance();
+    await HubManager.resetInstance();
   });
 
   describe('Singleton Pattern', () => {
@@ -124,9 +124,9 @@ describe('HubManager', () => {
       );
     });
 
-    it('should allow re-initialization after reset', () => {
+    it('should allow re-initialization after reset', async () => {
       HubManager.getInstance(mockApp);
-      HubManager.resetInstance();
+      await HubManager.resetInstance();
 
       // Should throw because instance was reset
       expect(() => HubManager.getInstance()).toThrow();

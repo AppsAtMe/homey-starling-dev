@@ -103,18 +103,29 @@ export class RateLimiter {
   }
 
   /**
-   * Clear rate limit history for a key
+   * Clear rate limit history for a key, rejecting any queued requests
    */
   clear(key: string): void {
     this.timestamps.delete(key);
-    this.queues.delete(key);
+    const queue = this.queues.get(key);
+    if (queue) {
+      for (const request of queue) {
+        request.reject(new Error('Rate limiter cleared'));
+      }
+      this.queues.delete(key);
+    }
   }
 
   /**
-   * Clear all rate limit history
+   * Clear all rate limit history, rejecting any queued requests
    */
   clearAll(): void {
     this.timestamps.clear();
+    for (const queue of this.queues.values()) {
+      for (const request of queue) {
+        request.reject(new Error('Rate limiter cleared'));
+      }
+    }
     this.queues.clear();
   }
 }

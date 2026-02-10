@@ -10,6 +10,7 @@
 
 import { EventEmitter } from 'events';
 import { StarlingClient } from '../api/StarlingClient';
+import { StarlingError } from '../api/errors';
 import { Device, StatusResponse } from '../api/types';
 import {
   HubConfig,
@@ -38,7 +39,7 @@ declare interface HubConnection {
  * Manages connection to a single Starling Hub
  */
 class HubConnection extends EventEmitter {
-  private readonly config: HubConfig;
+  private config: HubConfig;
   private readonly client: StarlingClient;
   private readonly gracePeriodMs: number;
 
@@ -80,11 +81,20 @@ class HubConnection extends EventEmitter {
   }
 
   /**
+   * Update non-connection config fields (e.g. name, pollIntervalMs)
+   */
+  updateConfig(updates: Partial<HubConfig>): void {
+    this.config = { ...this.config, ...updates };
+  }
+
+  /**
    * Get the current hub status
    */
   getStatus(): HubStatus {
+    // Strip apiKey from status to avoid leaking to frontends
+    const { apiKey: _, ...safeConfig } = this.getConfig();
     return {
-      config: this.getConfig(),
+      config: { ...safeConfig, apiKey: '' } as HubConfig,
       state: this.state,
       isOnline: this.state === 'connected',
       lastPoll: this.lastPoll,
@@ -260,6 +270,8 @@ class HubConnection extends EventEmitter {
     const changes: DeviceStateChange[] = [];
     const newDeviceIds = new Set(devices.map((d) => d.id));
     const timestamp = new Date();
+    let hasAdditions = false;
+    let hasRemovals = false;
 
     // Check for new and changed devices
     for (const device of devices) {
@@ -267,6 +279,7 @@ class HubConnection extends EventEmitter {
 
       if (!cached) {
         // New device
+        hasAdditions = true;
         this.deviceCache.set(device.id, device);
         this.emit('deviceAdded', device);
       } else {
@@ -291,12 +304,13 @@ class HubConnection extends EventEmitter {
     // Check for removed devices
     for (const deviceId of this.deviceCache.keys()) {
       if (!newDeviceIds.has(deviceId)) {
+        hasRemovals = true;
         this.deviceCache.delete(deviceId);
         this.emit('deviceRemoved', deviceId);
       }
     }
 
-    if (changes.length > 0 || devices.length !== this.deviceCache.size) {
+    if (changes.length > 0 || hasAdditions || hasRemovals) {
       this.emit('devicesUpdated', devices);
     }
 
@@ -336,7 +350,7 @@ class HubConnection extends EventEmitter {
   }
 
   /**
-   * Deep equality check
+   * Deep equality check (handles arrays, objects, and primitives)
    */
   private deepEqual(a: unknown, b: unknown): boolean {
     if (a === b) return true;
@@ -344,6 +358,15 @@ class HubConnection extends EventEmitter {
     if (typeof a !== typeof b) return false;
 
     if (typeof a === 'object' && typeof b === 'object') {
+      const aIsArray = Array.isArray(a);
+      const bIsArray = Array.isArray(b);
+      if (aIsArray !== bIsArray) return false;
+
+      if (aIsArray && bIsArray) {
+        if (a.length !== b.length) return false;
+        return a.every((val, i) => this.deepEqual(val, b[i]));
+      }
+
       const aObj = a as Record<string, unknown>;
       const bObj = b as Record<string, unknown>;
       const aKeys = Object.keys(aObj);
@@ -435,27 +458,39 @@ class HubConnection extends EventEmitter {
     );
 
     this.retryTimeout = setTimeout(async () => {
+      if (this.state !== 'reconnecting') return;
+
       this.retryCount++;
 
       try {
-        if (this.state === 'reconnecting') {
-          await this.client.testConnection();
-          // If we get here, connection is restored
-          const devices = await this.client.getDevices();
-          this.updateDeviceCache(devices);
+        await this.client.testConnection();
+        if (this.state !== 'reconnecting') return;
 
-          this.retryCount = 0;
-          this.gracePeriodStarted = null;
-          this.lastError = null;
-          this.lastPoll = new Date();
+        const devices = await this.client.getDevices();
+        if (this.state !== 'reconnecting') return;
 
-          this.setState('connected');
-          this.emit('online');
-        }
+        this.updateDeviceCache(devices);
+
+        this.retryCount = 0;
+        this.gracePeriodStarted = null;
+        this.lastError = null;
+        this.lastPoll = new Date();
+
+        this.setState('connected');
+        this.emit('online');
       } catch (error) {
-        if (this.isGracePeriodExpired()) {
-          this.goOffline();
+        if (this.state !== 'reconnecting') return;
+
+        // Only treat network-level errors as retry candidates
+        if (error instanceof StarlingError) {
+          if (this.isGracePeriodExpired()) {
+            this.goOffline();
+          } else {
+            this.emit('error', error);
+            this.scheduleRetry();
+          }
         } else {
+          // Data processing errors (TypeError, etc.) — log but don't take hub offline
           this.emit('error', error as Error);
           this.scheduleRetry();
         }

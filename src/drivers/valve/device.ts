@@ -20,6 +20,12 @@ class ValveDeviceClass extends StarlingDevice {
    */
   protected registerCapabilityListeners(): void {
     this.registerCapabilityListener('onoff', async (value: boolean) => {
+      // When manually closing, cancel any pending auto-close timer
+      if (!value) {
+        const store = this.getStore() as { starlingId: string };
+        const driver = this.driver as unknown as { clearAutoCloseTimer?(id: string): void };
+        driver.clearAutoCloseTimer?.(store.starlingId);
+      }
       await this.setPropertyOptimistic('isOn', value, 'onoff');
     });
   }
@@ -38,13 +44,6 @@ class ValveDeviceClass extends StarlingDevice {
   protected async mapStateToCapabilities(device: Device): Promise<void> {
     const valve = device as ValveDevice;
     await this.safeSetCapabilityValue('onoff', valve.isOn);
-  }
-
-  /**
-   * Called when the device is initialized
-   */
-  async onInit(): Promise<void> {
-    await super.onInit();
   }
 }
 

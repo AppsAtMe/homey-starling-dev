@@ -161,6 +161,20 @@ interface DiagnosticsExportResponse {
   };
 }
 
+/**
+ * Map permissions to a safe serializable format
+ */
+function mapPermissions(
+  permissions: { read?: boolean; write?: boolean; camera?: boolean } | null | undefined
+): { read: boolean; write: boolean; camera: boolean } | null {
+  if (!permissions) return null;
+  return {
+    read: permissions.read ?? false,
+    write: permissions.write ?? false,
+    camera: permissions.camera ?? false,
+  };
+}
+
 // ============================================================
 // Test Endpoints
 // ============================================================
@@ -413,13 +427,7 @@ function getDiagnostics({ homey }: ApiContext): DiagnosticsResponse {
       lastError: status.lastError,
       apiVersion: status.apiVersion,
       deviceCount: status.deviceCount,
-      permissions: status.permissions
-        ? {
-            read: status.permissions.read ?? false,
-            write: status.permissions.write ?? false,
-            camera: status.permissions.camera ?? false,
-          }
-        : null,
+      permissions: mapPermissions(status.permissions),
     })),
   };
 }
@@ -469,13 +477,7 @@ function exportDiagnostics({ homey }: ApiContext): DiagnosticsExportResponse {
       lastError: status.lastError,
       gracePeriodStarted: status.gracePeriodStarted?.toISOString() ?? null,
       apiVersion: status.apiVersion,
-      permissions: status.permissions
-        ? {
-            read: status.permissions.read ?? false,
-            write: status.permissions.write ?? false,
-            camera: status.permissions.camera ?? false,
-          }
-        : null,
+      permissions: mapPermissions(status.permissions),
       devices: devices.map((device) => ({
         id: device.id,
         name: device.name,

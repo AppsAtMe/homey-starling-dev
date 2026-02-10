@@ -11,6 +11,7 @@
 import Homey from 'homey';
 import { HubManager, DeviceWithHub, HubStatus } from '../../lib/hub';
 import { DeviceCategory, BaseDevice } from '../../lib/api/types';
+import { DeviceStore } from './types';
 
 /**
  * Homey Zone structure
@@ -39,18 +40,6 @@ interface PairSession {
   setHandler(event: string, handler: (...args: unknown[]) => unknown): void;
   showView(viewId: string): Promise<void>;
   nextView(): Promise<void>;
-}
-
-/**
- * Stored device data (for type safety with getStore())
- */
-interface DeviceStore {
-  starlingId: string;
-  hubId: string;
-  category: DeviceCategory;
-  model: string;
-  roomName: string;
-  structureName: string;
 }
 
 /**
@@ -222,9 +211,8 @@ abstract class StarlingDriver extends Homey.Driver {
         }
 
         return zones;
-      } catch {
-        // If zones API is not available, return empty array
-        this.log('Zones API not available');
+      } catch (error) {
+        this.log('Failed to retrieve zones:', error instanceof Error ? error.message : String(error));
         return [];
       }
     });

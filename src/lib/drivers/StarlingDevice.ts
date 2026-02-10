@@ -11,26 +11,8 @@
 
 import Homey from 'homey';
 import { HubManager, HubConnection, DeviceStateChange } from '../../lib/hub';
-import { Device, DeviceCategory } from '../../lib/api/types';
-
-/**
- * App interface for type safety when accessing triggerCommandFailed
- */
-interface StarlingApp {
-  triggerCommandFailed(deviceName: string, command: string, error: string): void;
-}
-
-/**
- * Stored device data
- */
-interface DeviceStore {
-  starlingId: string;
-  hubId: string;
-  category: DeviceCategory;
-  model: string;
-  roomName: string;
-  structureName: string;
-}
+import { Device } from '../../lib/api/types';
+import { DeviceStore, StarlingApp } from './types';
 
 /**
  * Pending optimistic update
@@ -190,24 +172,29 @@ abstract class StarlingDevice extends Homey.Device {
    * Process device state changes
    */
   private async processStateChange(change: DeviceStateChange): Promise<void> {
-    // Check for pending optimistic updates
-    for (const propChange of change.changes) {
-      const pending = this.pendingUpdates.get(propChange.property);
-      if (pending) {
-        // Compare with expected value
-        if (propChange.newValue === pending.expectedPropertyValue) {
-          // Update confirmed, clear pending
-          if (pending.timeoutId) {
-            clearTimeout(pending.timeoutId);
+    try {
+      // Check for pending optimistic updates
+      for (const propChange of change.changes) {
+        const pending = this.pendingUpdates.get(propChange.property);
+        if (pending) {
+          // Use loose equality to handle string/number mismatches from API responses
+          // eslint-disable-next-line eqeqeq
+          if (propChange.newValue == pending.expectedPropertyValue) {
+            // Update confirmed, clear pending
+            if (pending.timeoutId) {
+              clearTimeout(pending.timeoutId);
+            }
+            this.pendingUpdates.delete(propChange.property);
+            this.log(`Update confirmed for ${propChange.property}`);
           }
-          this.pendingUpdates.delete(propChange.property);
-          this.log(`Update confirmed for ${propChange.property}`);
         }
       }
-    }
 
-    // Sync state
-    await this.syncDeviceState();
+      // Sync state
+      await this.syncDeviceState();
+    } catch (error) {
+      this.error(`Failed to process state change for ${this.getName()}:`, error);
+    }
   }
 
   /**
@@ -311,8 +298,8 @@ abstract class StarlingDevice extends Homey.Device {
         .createNotification({
           excerpt: this.homey.__('errors.command_failed', { device: this.getName() }),
         })
-        .catch(() => {
-          // Ignore notification errors
+        .catch((notifError: Error) => {
+          this.error('Failed to notify user about command rollback:', notifError);
         });
     } catch (error) {
       this.error(`Failed to rollback ${capability}:`, error);
@@ -332,24 +319,6 @@ abstract class StarlingDevice extends Homey.Device {
         await this.setCapabilityValue(capability, value);
       }
     }
-  }
-
-  /**
-   * Register a capability listener with error handling
-   * Uses super.registerCapabilityListener to call the parent Homey.Device method
-   */
-  protected safeRegisterCapabilityListener<T>(
-    capability: string,
-    handler: (value: T) => Promise<void>
-  ): void {
-    super.registerCapabilityListener(capability, async (value: T) => {
-      try {
-        await handler(value);
-      } catch (error) {
-        this.error(`Error handling ${capability}:`, error);
-        throw error;
-      }
-    });
   }
 
   /**
@@ -470,32 +439,14 @@ abstract class StarlingDevice extends Homey.Device {
   }
 
   /**
-   * Handle state changes and fire appropriate flow triggers
-   *
-   * Override this method in subclasses to implement device-specific
-   * flow trigger logic. Call super.handleStateChanges() at the end
-   * to update the previous state tracking.
-   *
-   * @param device - Current device state from Starling
+   * Handle state changes and fire appropriate flow triggers.
+   * Override in subclasses to implement device-specific flow trigger logic.
+   * Use triggerOnRisingEdge, triggerOnBothEdges, and updatePreviousState
+   * to track individual properties.
    */
-  protected handleStateChanges(device: Device): void {
-    // Base implementation just updates tracking
-    // Subclasses should override to fire specific triggers
-    this.updateDeviceStateTracking(device);
-  }
-
-  /**
-   * Update the previous state tracking from a device object
-   *
-   * @param device - Device to track state from
-   */
-  private updateDeviceStateTracking(device: Device): void {
-    // Store key properties for change detection
-    for (const [key, value] of Object.entries(device)) {
-      if (value !== undefined && typeof value !== 'object') {
-        this.previousState.set(key, value);
-      }
-    }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected handleStateChanges(_device: Device): void {
+    // No-op: subclasses override to fire specific triggers
   }
 
   /**

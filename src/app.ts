@@ -137,22 +137,18 @@ class StarlingHomeHubApp extends Homey.App {
     const hubIsOnlineCondition = this.homey.flow.getConditionCard('hub_is_online');
     hubIsOnlineCondition.registerRunListener((args: { hub: { id: string } }) => {
       const hub = this.hubManager.getHub(args.hub.id);
-      return hub?.isOnline() ?? false;
+      if (!hub) {
+        throw new Error(this.homey.__('errors.hub_not_found'));
+      }
+      return hub.isOnline();
     });
     hubIsOnlineCondition.registerArgumentAutocompleteListener('hub', (query: string) => {
-      const hubs = this.hubManager.getSettings().hubs;
-      return hubs
-        .filter((h: HubConfig) => h.name.toLowerCase().includes(query.toLowerCase()))
-        .map((h: HubConfig) => ({
-          id: h.id,
-          name: h.name,
-        }));
+      return this.getHubAutocompleteResults(query);
     });
 
     // Home/Away mode condition
     const homeAwayModeCondition = this.homey.flow.getConditionCard('home_away_mode_is');
     homeAwayModeCondition.registerRunListener((args: { mode: string }) => {
-      // Check home/away mode from any connected hub
       const hubs = this.hubManager.getAllHubs();
       for (const hub of hubs) {
         const devices = hub.getCachedDevices();
@@ -163,7 +159,7 @@ class StarlingHomeHubApp extends Homey.App {
           }
         }
       }
-      return false;
+      throw new Error(this.homey.__('errors.no_home_away_device'));
     });
 
     // ============================================================
@@ -182,27 +178,32 @@ class StarlingHomeHubApp extends Homey.App {
       await this.hubManager.refreshHub(args.hub.id);
     });
     refreshHubAction.registerArgumentAutocompleteListener('hub', (query: string) => {
-      const hubs = this.hubManager.getSettings().hubs;
-      return hubs
-        .filter((h: HubConfig) => h.name.toLowerCase().includes(query.toLowerCase()))
-        .map((h: HubConfig) => ({
-          id: h.id,
-          name: h.name,
-        }));
+      return this.getHubAutocompleteResults(query);
     });
 
     // Set Home/Away mode action
     const setHomeAwayAction = this.homey.flow.getActionCard('set_home_away_mode');
     setHomeAwayAction.registerRunListener(async (args: { mode: string }) => {
-      // Find and update all home/away control devices
+      const errors: string[] = [];
       const hubs = this.hubManager.getAllHubs();
+
       for (const hub of hubs) {
         const devices = hub.getCachedDevices();
         for (const device of devices) {
           if (device.category === 'home_away_control') {
-            await this.hubManager.setDeviceProperty(device.id, 'mode', args.mode);
+            try {
+              await this.hubManager.setDeviceProperty(device.id, 'mode', args.mode);
+            } catch (error) {
+              const hubName = hub.getConfig().name;
+              errors.push(hubName);
+              this.logger.error(`Failed to set home/away on hub ${hubName}:`, error as Error);
+            }
           }
         }
+      }
+
+      if (errors.length > 0) {
+        throw new Error(`Failed to set home/away mode on: ${errors.join(', ')}`);
       }
     });
 
@@ -413,6 +414,16 @@ class StarlingHomeHubApp extends Homey.App {
         this.logger.debug(`Discovered face: ${personName} at ${device.name}`);
       }
     }
+  }
+
+  /**
+   * Hub autocomplete results for flow cards
+   */
+  private getHubAutocompleteResults(query: string): Array<{ id: string; name: string }> {
+    const hubs = this.hubManager.getSettings().hubs;
+    return hubs
+      .filter((h: HubConfig) => h.name.toLowerCase().includes(query.toLowerCase()))
+      .map((h: HubConfig) => ({ id: h.id, name: h.name }));
   }
 
   /**

@@ -18,11 +18,8 @@
  * - error_occurred: When state changes to 'error'
  */
 
-import { StarlingDevice } from '../../lib/drivers';
+import { StarlingDevice, BATTERY_LOW_THRESHOLD } from '../../lib/drivers';
 import { Device, RobotDevice } from '../../lib/api/types';
-
-// Battery low threshold
-const BATTERY_LOW_THRESHOLD = 20;
 
 class RobotDeviceClass extends StarlingDevice {
   /**

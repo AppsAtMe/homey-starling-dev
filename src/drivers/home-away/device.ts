@@ -11,14 +11,8 @@
  */
 
 import { StarlingDevice } from '../../lib/drivers';
+import { StarlingApp } from '../../lib/drivers/types';
 import { Device, HomeAwayDevice } from '../../lib/api/types';
-
-/**
- * App interface for type safety when accessing triggerHomeAwayChanged
- */
-interface StarlingApp {
-  triggerHomeAwayChanged(mode: string): void;
-}
 
 class HomeAwayDeviceClass extends StarlingDevice {
   /**
@@ -81,17 +75,8 @@ class HomeAwayDeviceClass extends StarlingDevice {
           void this.triggerFlow('changed_to_away');
         }
       }
+      this.updatePreviousState('mode', homeAway.mode);
     }
-
-    // Call base implementation to update state tracking
-    super.handleStateChanges(device);
-  }
-
-  /**
-   * Called when the device is initialized
-   */
-  async onInit(): Promise<void> {
-    await super.onInit();
   }
 }
 

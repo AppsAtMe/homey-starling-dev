@@ -77,9 +77,9 @@ class HubManager extends EventEmitter {
   /**
    * Reset the singleton (for testing)
    */
-  static resetInstance(): void {
+  static async resetInstance(): Promise<void> {
     if (HubManager.instance) {
-      void HubManager.instance.shutdown();
+      await HubManager.instance.shutdown();
       HubManager.instance = null;
     }
   }
@@ -101,11 +101,12 @@ class HubManager extends EventEmitter {
       logger.info('HubManager initializing...');
 
       // Load settings from Homey storage
-      await this.loadSettings();
+      this.loadSettings();
 
       // Connect to each hub with staggered timing
       const hubs = this.settings.hubs;
       const staggerDelayMs = 2000; // 2 seconds between hubs
+      const failedHubs: string[] = [];
 
       for (let i = 0; i < hubs.length; i++) {
         const hubConfig = hubs[i];
@@ -115,6 +116,9 @@ class HubManager extends EventEmitter {
           await this.addHub(hubConfig, false); // Don't save - already in settings
         } catch (error) {
           logger.error(`Failed to connect to hub ${hubConfig.name}:`, error as Error);
+          failedHubs.push(hubConfig.name);
+          // Emit hubOffline so the existing notification infrastructure kicks in
+          this.emit('hubOffline', hubConfig.id, (error as Error).message);
         }
 
         // Stagger next connection
@@ -124,7 +128,14 @@ class HubManager extends EventEmitter {
       }
 
       this.initialized = true;
-      logger.info(`HubManager initialized with ${this.connections.size} hub(s)`);
+      if (failedHubs.length > 0) {
+        logger.info(
+          `HubManager initialized with ${this.connections.size} hub(s), ` +
+          `${failedHubs.length} failed: ${failedHubs.join(', ')}`
+        );
+      } else {
+        logger.info(`HubManager initialized with ${this.connections.size} hub(s)`);
+      }
     } finally {
       this.initializing = false;
     }
@@ -193,6 +204,9 @@ class HubManager extends EventEmitter {
     // Create and start poller
     const pollInterval = config.pollIntervalMs ?? this.settings.defaultPollIntervalMs;
     const poller = new Poller(connection, { intervalMs: pollInterval });
+    poller.on('error', (error: Error) => {
+      getLogger().debug(`Poller error for hub ${config.id}: ${error.message}`);
+    });
     this.pollers.set(config.id, poller);
     poller.start();
 
@@ -201,7 +215,7 @@ class HubManager extends EventEmitter {
 
     // Save to settings if requested
     if (save) {
-      await this.saveHubToSettings(config);
+      this.saveHubToSettings(config);
     }
 
     this.emit('hubAdded', config.id, config);
@@ -238,8 +252,11 @@ class HubManager extends EventEmitter {
       return this.addHub(newConfig, true);
     }
 
-    // Just update settings
-    await this.saveHubToSettings(newConfig);
+    // Update the running connection's config (e.g. name)
+    connection.updateConfig(updates);
+
+    // Persist settings
+    this.saveHubToSettings(newConfig);
 
     // Update poll interval if changed
     if (updates.pollIntervalMs !== undefined) {
@@ -285,7 +302,7 @@ class HubManager extends EventEmitter {
 
     // Update settings if requested
     if (save) {
-      await this.removeHubFromSettings(hubId);
+      this.removeHubFromSettings(hubId);
     }
 
     this.emit('hubRemoved', hubId);
@@ -438,7 +455,7 @@ class HubManager extends EventEmitter {
    */
   async updateSettings(updates: Partial<Omit<AppSettings, 'hubs'>>): Promise<void> {
     this.settings = { ...this.settings, ...updates };
-    await this.saveSettings();
+    this.saveSettings();
   }
 
   // ============================================================
@@ -488,7 +505,7 @@ class HubManager extends EventEmitter {
   /**
    * Load settings from Homey storage
    */
-  private async loadSettings(): Promise<void> {
+  private loadSettings(): void {
     const stored = this.app.homey.settings.get('starlingSettings') as AppSettings | null;
     if (stored) {
       this.settings = { ...DEFAULT_SETTINGS, ...stored };
@@ -498,29 +515,29 @@ class HubManager extends EventEmitter {
   /**
    * Save settings to Homey storage
    */
-  private async saveSettings(): Promise<void> {
+  private saveSettings(): void {
     this.app.homey.settings.set('starlingSettings', this.settings);
   }
 
   /**
    * Add or update a hub in settings
    */
-  private async saveHubToSettings(config: HubConfig): Promise<void> {
+  private saveHubToSettings(config: HubConfig): void {
     const index = this.settings.hubs.findIndex((h) => h.id === config.id);
     if (index >= 0) {
       this.settings.hubs[index] = config;
     } else {
       this.settings.hubs.push(config);
     }
-    await this.saveSettings();
+    this.saveSettings();
   }
 
   /**
    * Remove a hub from settings
    */
-  private async removeHubFromSettings(hubId: string): Promise<void> {
+  private removeHubFromSettings(hubId: string): void {
     this.settings.hubs = this.settings.hubs.filter((h) => h.id !== hubId);
-    await this.saveSettings();
+    this.saveSettings();
   }
 
   /**

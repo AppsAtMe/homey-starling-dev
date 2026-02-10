@@ -17,11 +17,8 @@
  * - battery_low: When battery drops below threshold (20%)
  */
 
-import { StarlingDevice } from '../../lib/drivers';
+import { StarlingDevice, BATTERY_LOW_THRESHOLD } from '../../lib/drivers';
 import { Device, SmokeCODevice } from '../../lib/api/types';
-
-// Battery low threshold
-const BATTERY_LOW_THRESHOLD = 20;
 
 class SmokeCODeviceClass extends StarlingDevice {
   /**
@@ -78,12 +75,6 @@ class SmokeCODeviceClass extends StarlingDevice {
     }
   }
 
-  /**
-   * Called when the device is initialized
-   */
-  async onInit(): Promise<void> {
-    await super.onInit();
-  }
 }
 
 module.exports = SmokeCODeviceClass;
