@@ -35,11 +35,12 @@ class ValveDriver extends StarlingDriver {
     this.log('Valve driver initialized');
   }
 
-  async onUninit(): Promise<void> {
+  onUninit(): Promise<void> {
     for (const timer of this.autoCloseTimers.values()) {
       clearTimeout(timer);
     }
     this.autoCloseTimers.clear();
+    return Promise.resolve();
   }
 
   /**
