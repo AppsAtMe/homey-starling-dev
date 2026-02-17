@@ -1,5 +1,5 @@
 {
-  "id": "com.eyecatch.googlenest.starling",
+  "id": "com.andrewrmitchell.starling",
   "version": "2.0.0",
   "compatibility": ">=12.4.0",
   "sdk": 3,
@@ -29,9 +29,9 @@
     "large": "/assets/images/large.png",
     "xlarge": "/assets/images/xlarge.png"
   },
-  "source": "https://github.com/homey-contrib/homey-starling",
+  "source": "https://github.com/AppsAtMe/homey-starling-dev",
   "bugs": {
-    "url": "https://github.com/homey-contrib/homey-starling/issues"
+    "url": "https://github.com/AppsAtMe/homey-starling-dev/issues"
   },
   "author": {
     "name": "Andrew R. Mitchell",
@@ -47,7 +47,7 @@
       {
         "version": "2.0.0",
         "name": "Andrew R. Mitchell",
-        "email": "apps@@andrewrmitchell.com"
+        "email": "apps@andrewrmitchell.com"
       }
     ]
   },
