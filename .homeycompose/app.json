@@ -11,7 +11,7 @@
     "en": "Starling Home Hub"
   },
   "description": {
-    "en": "Adds support for Google Home devices via the Starling Home Hub."
+    "en": "Bring your Google Home ecosystem to Homey."
   },
   "category": [
     "tools"

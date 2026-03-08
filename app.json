@@ -1,6 +1,6 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
-  "id": "com.eyecatch.googlenest.starling",
+  "id": "com.andrewrmitchell.starling",
   "version": "2.0.0",
   "compatibility": ">=12.4.0",
   "sdk": 3,
@@ -12,7 +12,7 @@
     "en": "Starling Home Hub"
   },
   "description": {
-    "en": "Adds support for Google Home devices via the Starling Home Hub."
+    "en": "Bring your Google Home ecosystem to Homey."
   },
   "category": [
     "tools"
@@ -30,9 +30,9 @@
     "large": "/assets/images/large.png",
     "xlarge": "/assets/images/xlarge.png"
   },
-  "source": "https://github.com/homey-contrib/homey-starling",
+  "source": "https://github.com/AppsAtMe/homey-starling-dev",
   "bugs": {
-    "url": "https://github.com/homey-contrib/homey-starling/issues"
+    "url": "https://github.com/AppsAtMe/homey-starling-dev/issues"
   },
   "author": {
     "name": "Andrew R. Mitchell",
@@ -48,7 +48,7 @@
       {
         "version": "2.0.0",
         "name": "Andrew R. Mitchell",
-        "email": "apps@@andrewrmitchell.com"
+        "email": "apps@andrewrmitchell.com"
       }
     ]
   },
@@ -2939,6 +2939,11 @@
         "measure_battery",
         "vacuum_state"
       ],
+      "energy": {
+        "batteries": [
+          "INTERNAL"
+        ]
+      },
       "capabilitiesOptions": {
         "onoff": {
           "title": {

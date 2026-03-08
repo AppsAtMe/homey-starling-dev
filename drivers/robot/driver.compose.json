@@ -8,6 +8,9 @@
     "measure_battery",
     "vacuum_state"
   ],
+  "energy": {
+    "batteries": ["INTERNAL"]
+  },
   "capabilitiesOptions": {
     "onoff": {
       "title": {

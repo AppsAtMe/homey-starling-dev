@@ -1,2 +1,1 @@
-Adds support for Google Home Connected devices via the Starling Home Hub.
-Currently supports all devices supported by Starling Home Hub. This includes video class devices like doorbells and cameras. For these devices, live streaming is also supported.
+Connect your Google Home devices to Homey through the Starling Home Hub. Control lights, thermostats, cameras, doorbells, locks, and more. Includes live streaming support for video devices.
