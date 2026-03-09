@@ -25,7 +25,7 @@ import { Device, CameraDevice } from '../api/types';
  * Type for the app instance to access triggerFaceDetected
  */
 interface StarlingHomeHubApp {
-  triggerFaceDetected(personName: string, cameraId: string, cameraName: string): void;
+  triggerFaceDetected(personName: string, cameraId: string, cameraName: string, hubId: string): void;
 }
 
 /**
@@ -111,7 +111,7 @@ abstract class BaseCameraDevice extends StarlingDevice {
         const change = this.checkStateChange(stateKey, detected);
         if (change && change.newValue === true) {
           const app = this.homey.app as unknown as StarlingHomeHubApp;
-          app.triggerFaceDetected(personName, camera.id, camera.name);
+          app.triggerFaceDetected(personName, camera.id, camera.name, this.hubId);
         }
         this.updatePreviousState(stateKey, detected);
       }

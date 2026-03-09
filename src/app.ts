@@ -67,6 +67,9 @@ class StarlingHomeHubApp extends Homey.App {
     // Initialize manager (loads saved hubs and connects with staggered timing)
     await this.hubManager.initialize();
 
+    // Seed autocomplete caches from the currently connected hubs.
+    this.rebuildFaceAutocompleteCache();
+
     // Register app-level flow cards
     this.registerFlowCards();
 
@@ -123,7 +126,7 @@ class StarlingHomeHubApp extends Homey.App {
           { id: 'any', name: 'Any camera', description: 'Any camera with face detection' },
           ...cameras
             .filter((c) => c.name.toLowerCase().includes(query.toLowerCase()))
-            .map((c) => ({ id: c.id, name: c.name, description: `Camera: ${c.name}` })),
+            .map((c) => ({ id: c.compositeId, name: c.name, description: `Camera: ${c.name}` })),
         ];
         return results;
       }
@@ -192,7 +195,7 @@ class StarlingHomeHubApp extends Homey.App {
         for (const device of devices) {
           if (device.category === 'home_away_control') {
             try {
-              await this.hubManager.setDeviceProperty(device.id, 'mode', args.mode);
+              await hub.setDeviceProperty(device.id, 'mode', args.mode);
             } catch (error) {
               const hubName = hub.getConfig().name;
               errors.push(hubName);
@@ -216,6 +219,7 @@ class StarlingHomeHubApp extends Homey.App {
   private setupHubManagerEvents(): void {
     this.hubManager.on('hubOnline', (hubId: string) => {
       this.logger.info(`Hub online: ${hubId}`);
+      this.rebuildFaceAutocompleteCache();
 
       // Get hub name for the trigger token
       const hub = this.hubManager.getHub(hubId);
@@ -248,10 +252,12 @@ class StarlingHomeHubApp extends Homey.App {
 
     this.hubManager.on('hubAdded', (hubId: string, config: HubConfig) => {
       this.logger.info(`Hub added: ${config.name} (${hubId})`);
+      this.rebuildFaceAutocompleteCache();
     });
 
     this.hubManager.on('hubRemoved', (hubId: string) => {
       this.logger.info(`Hub removed: ${hubId}`);
+      this.rebuildFaceAutocompleteCache();
     });
 
     this.hubManager.on('deviceStateChange', (change: DeviceStateChange) => {
@@ -260,18 +266,22 @@ class StarlingHomeHubApp extends Homey.App {
       );
       // Device drivers will handle their own state changes via their connection events
 
-      // Update known faces if this is a camera with face detection
+      // Keep autocomplete state in sync as camera metadata changes.
       if (change.device.category === 'cam') {
-        this.updateKnownFaces(change.hubId, change.device);
+        this.rebuildFaceAutocompleteCache();
       }
     });
 
     this.hubManager.on('deviceAdded', (hubId: string, device) => {
       this.logger.debug(`Device added on hub ${hubId}: ${device.id} (${device.name})`);
+      if (device.category === 'cam') {
+        this.rebuildFaceAutocompleteCache();
+      }
     });
 
     this.hubManager.on('deviceRemoved', (hubId: string, deviceId: string) => {
       this.logger.debug(`Device removed from hub ${hubId}: ${deviceId}`);
+      this.rebuildFaceAutocompleteCache();
     });
   }
 
@@ -364,8 +374,13 @@ class StarlingHomeHubApp extends Homey.App {
    *
    * Called by camera devices when a recognized face is detected.
    */
-  triggerFaceDetected(personName: string, cameraId: string, cameraName: string): void {
-    const state = { person: personName, camera: cameraId };
+  triggerFaceDetected(
+    personName: string,
+    cameraId: string,
+    cameraName: string,
+    hubId: string
+  ): void {
+    const state = { person: personName, camera: `${hubId}:${cameraId}` };
     const tokens = { person_name: personName, camera_name: cameraName };
 
     this.homey.flow
@@ -379,41 +394,46 @@ class StarlingHomeHubApp extends Homey.App {
   }
 
   /**
-   * Update known faces from a camera device
-   *
-   * Called when a camera's state changes to discover new faces.
+   * Rebuild the face and camera autocomplete caches from current hub state.
    */
-  private updateKnownFaces(hubId: string, device: DeviceStateChange['device']): void {
-    const camera = device as { faceDetected?: Record<string, boolean> };
+  private rebuildFaceAutocompleteCache(): void {
+    const knownFaces = new Map<string, KnownFace>();
+    const cameras = new Map<string, CameraInfo>();
 
-    if (!camera.faceDetected) {
-      return;
-    }
+    for (const hub of this.hubManager.getAllHubs()) {
+      const hubId = hub.getConfig().id;
 
-    // Update camera registry
-    const compositeId = `${hubId}:${device.id}`;
-    if (!this.cameras.has(compositeId)) {
-      this.cameras.set(compositeId, {
-        id: device.id,
-        compositeId,
-        name: device.name,
-        hubId,
-      });
-    }
+      for (const device of hub.getCachedDevices()) {
+        if (device.category !== 'cam') {
+          continue;
+        }
 
-    // Update known faces
-    for (const personName of Object.keys(camera.faceDetected)) {
-      const key = `${personName}:${device.id}`;
-      if (!this.knownFaces.has(key)) {
-        this.knownFaces.set(key, {
-          name: personName,
-          cameraId: device.id,
-          cameraName: device.name,
+        const camera = device;
+        if (!camera.faceDetected) {
+          continue;
+        }
+
+        const compositeId = `${hubId}:${camera.id}`;
+        cameras.set(compositeId, {
+          id: camera.id,
+          compositeId,
+          name: camera.name,
           hubId,
         });
-        this.logger.debug(`Discovered face: ${personName} at ${device.name}`);
+
+        for (const personName of Object.keys(camera.faceDetected)) {
+          knownFaces.set(`${hubId}:${camera.id}:${personName}`, {
+            name: personName,
+            cameraId: camera.id,
+            cameraName: camera.name,
+            hubId,
+          });
+        }
       }
     }
+
+    this.knownFaces = knownFaces;
+    this.cameras = cameras;
   }
 
   /**

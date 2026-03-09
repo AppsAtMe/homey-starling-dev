@@ -799,7 +799,7 @@
           <div class="form-row">
             <label class="homey-form-label" for="hub-apikey" data-i18n="settings.hub.apiKey">API Key</label>
             <input class="homey-form-input" type="text" id="hub-apikey" required placeholder="XXXXXXXXXXXX" maxlength="12" />
-            <div class="form-hint">12-character API key from Starling app</div>
+            <div class="form-hint" id="hub-apikey-hint">12-character API key from Starling app</div>
           </div>
 
           <div class="form-row">
@@ -1099,6 +1099,8 @@
         var permissionsDisplay = document.getElementById('permissions-display');
         var discoverySection = document.getElementById('discovery-section');
         var manualDivider = document.getElementById('manual-divider');
+        var apiKeyInput = document.getElementById('hub-apikey');
+        var apiKeyHint = document.getElementById('hub-apikey-hint');
 
         // Reset form
         form.reset();
@@ -1106,6 +1108,9 @@
         testResult.style.display = 'none';
         testResult.textContent = '';
         permissionsDisplay.style.display = 'none';
+        apiKeyInput.required = true;
+        apiKeyInput.placeholder = 'XXXXXXXXXXXX';
+        apiKeyHint.textContent = '12-character API key from Starling app';
 
         // Reset discovery list
         resetDiscoveryList();
@@ -1121,7 +1126,10 @@
           document.getElementById('hub-id').value = hubId;
           document.getElementById('hub-name').value = hub.config.name;
           document.getElementById('hub-host').value = hub.config.host;
-          document.getElementById('hub-apikey').value = hub.config.apiKey;
+          apiKeyInput.value = '';
+          apiKeyInput.required = false;
+          apiKeyInput.placeholder = 'Leave blank to keep current key';
+          apiKeyHint.textContent = 'Leave blank to keep the current API key';
 
           var protocol = hub.config.useHttps ? 'https' : 'http';
           document.querySelector('input[name="protocol"][value="' + protocol + '"]').checked = true;
@@ -1157,8 +1165,9 @@
         var host = document.getElementById('hub-host').value.trim();
         var apiKey = document.getElementById('hub-apikey').value.trim();
         var useHttps = document.querySelector('input[name="protocol"]:checked').value === 'https';
+        var isEdit = Boolean(hubId);
 
-        if (!host || !apiKey) {
+        if (!host || (!isEdit && !apiKey)) {
           showTestResult(false, 'Please enter host and API key');
           return;
         }
@@ -1168,7 +1177,10 @@
         testBtn.disabled = true;
 
         var endpoint = hubId ? '/hubs/' + hubId + '/test' : '/hubs/test';
-        var body = hubId ? null : { host: host, apiKey: apiKey, useHttps: useHttps };
+        var body = { host: host, useHttps: useHttps };
+        if (apiKey) {
+          body.apiKey = apiKey;
+        }
 
         Homey.api('POST', endpoint, body, function(err, result) {
           testBtn.classList.remove('is-loading');
@@ -1236,8 +1248,9 @@
         var host = document.getElementById('hub-host').value.trim();
         var apiKey = document.getElementById('hub-apikey').value.trim();
         var useHttps = document.querySelector('input[name="protocol"]:checked').value === 'https';
+        var isEdit = Boolean(hubId);
 
-        if (!name || !host || !apiKey) {
+        if (!name || !host || (!isEdit && !apiKey)) {
           Homey.alert('Please fill in all required fields');
           return;
         }
@@ -1248,7 +1261,10 @@
 
         var method = hubId ? 'PUT' : 'POST';
         var endpoint = hubId ? '/hubs/' + hubId : '/hubs';
-        var body = { name: name, host: host, apiKey: apiKey, useHttps: useHttps };
+        var body = { name: name, host: host, useHttps: useHttps };
+        if (apiKey) {
+          body.apiKey = apiKey;
+        }
 
         Homey.api(method, endpoint, body, function(err, result) {
           saveBtn.classList.remove('is-loading');
@@ -1330,13 +1346,13 @@
 
           settings = result;
           document.getElementById('debug-mode').checked = settings.debugMode || false;
-          document.getElementById('poll-interval').value = Math.round((settings.defaultPollIntervalMs || 12000) / 1000);
+          document.getElementById('poll-interval').value = Math.round((settings.defaultPollIntervalMs || 5000) / 1000);
         });
       }
 
       function saveSettings() {
         var debugMode = document.getElementById('debug-mode').checked;
-        var pollIntervalSec = parseInt(document.getElementById('poll-interval').value) || 12;
+        var pollIntervalSec = parseInt(document.getElementById('poll-interval').value) || 5;
         var defaultPollIntervalMs = pollIntervalSec * 1000;
 
         var saveBtn = document.getElementById('save-settings-btn');

@@ -336,9 +336,13 @@ class HubManager extends EventEmitter {
   /**
    * Get the hub connection for a device
    */
-  getHubForDevice(deviceId: string): HubConnection | undefined {
-    const hubId = this.deviceToHub.get(deviceId);
-    return hubId ? this.connections.get(hubId) : undefined;
+  getHubForDevice(deviceId: string, hubId?: string): HubConnection | undefined {
+    if (hubId) {
+      return this.connections.get(hubId);
+    }
+
+    const mappedHubId = this.deviceToHub.get(deviceId);
+    return mappedHubId ? this.connections.get(mappedHubId) : undefined;
   }
 
   /**
@@ -372,11 +376,11 @@ class HubManager extends EventEmitter {
   /**
    * Find a device by ID across all hubs
    */
-  findDevice(deviceId: string): DeviceWithHub | undefined {
-    const hubId = this.deviceToHub.get(deviceId);
-    if (!hubId) return undefined;
+  findDevice(deviceId: string, hubId?: string): DeviceWithHub | undefined {
+    const resolvedHubId = hubId ?? this.deviceToHub.get(deviceId);
+    if (!resolvedHubId) return undefined;
 
-    const connection = this.connections.get(hubId);
+    const connection = this.connections.get(resolvedHubId);
     if (!connection) return undefined;
 
     const device = connection.getCachedDevice(deviceId);
@@ -384,8 +388,8 @@ class HubManager extends EventEmitter {
 
     return {
       device,
-      hubId,
-      compositeId: `${hubId}:${device.id}`,
+      hubId: resolvedHubId,
+      compositeId: `${resolvedHubId}:${device.id}`,
     };
   }
 
@@ -417,9 +421,10 @@ class HubManager extends EventEmitter {
   async setDeviceProperty(
     deviceId: string,
     property: string,
-    value: unknown
+    value: unknown,
+    hubId?: string
   ): Promise<void> {
-    const connection = this.getHubForDevice(deviceId);
+    const connection = this.getHubForDevice(deviceId, hubId);
     if (!connection) {
       throw new Error(`Device ${deviceId} not found`);
     }
@@ -430,8 +435,8 @@ class HubManager extends EventEmitter {
   /**
    * Get a camera snapshot
    */
-  async getSnapshot(deviceId: string): Promise<Buffer> {
-    const connection = this.getHubForDevice(deviceId);
+  async getSnapshot(deviceId: string, hubId?: string): Promise<Buffer> {
+    const connection = this.getHubForDevice(deviceId, hubId);
     if (!connection) {
       throw new Error(`Device ${deviceId} not found`);
     }

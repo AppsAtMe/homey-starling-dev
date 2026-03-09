@@ -9,6 +9,7 @@
 import Homey from 'homey';
 import { StarlingDriver } from '../../lib/drivers';
 import { DeviceCategory, HomeAwayDevice } from '../../lib/api/types';
+import { DeviceStore } from '../../lib/drivers/types';
 
 class HomeAwayDriver extends StarlingDriver {
   /**
@@ -49,9 +50,9 @@ class HomeAwayDriver extends StarlingDriver {
         if (args.mode !== 'home' && args.mode !== 'away') {
           throw new Error(this.homey.__('errors.invalid_home_away_mode', { mode: args.mode }));
         }
-        const store = args.device.getStore() as { starlingId: string };
+        const store = args.device.getStore() as Pick<DeviceStore, 'starlingId' | 'hubId'>;
         const hubManager = this.getHubManager();
-        await hubManager.setDeviceProperty(store.starlingId, 'mode', args.mode);
+        await hubManager.setDeviceProperty(store.starlingId, 'mode', args.mode, store.hubId);
       }
     );
   }

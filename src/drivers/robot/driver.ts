@@ -15,6 +15,7 @@
 import Homey from 'homey';
 import { StarlingDriver } from '../../lib/drivers';
 import { DeviceCategory, RobotDevice } from '../../lib/api/types';
+import { DeviceStore } from '../../lib/drivers/types';
 
 class RobotDriver extends StarlingDriver {
   /**
@@ -65,36 +66,36 @@ class RobotDriver extends StarlingDriver {
     // Start cleaning
     this.homey.flow.getActionCard('start_cleaning').registerRunListener(
       async (args: { device: Homey.Device }) => {
-        const store = args.device.getStore() as { starlingId: string };
+        const store = args.device.getStore() as Pick<DeviceStore, 'starlingId' | 'hubId'>;
         const hubManager = this.getHubManager();
-        await hubManager.setDeviceProperty(store.starlingId, 'isOn', true);
+        await hubManager.setDeviceProperty(store.starlingId, 'isOn', true, store.hubId);
       }
     );
 
     // Stop cleaning
     this.homey.flow.getActionCard('stop_cleaning').registerRunListener(
       async (args: { device: Homey.Device }) => {
-        const store = args.device.getStore() as { starlingId: string };
+        const store = args.device.getStore() as Pick<DeviceStore, 'starlingId' | 'hubId'>;
         const hubManager = this.getHubManager();
-        await hubManager.setDeviceProperty(store.starlingId, 'isOn', false);
+        await hubManager.setDeviceProperty(store.starlingId, 'isOn', false, store.hubId);
       }
     );
 
     // Pause cleaning
     this.homey.flow.getActionCard('pause_cleaning').registerRunListener(
       async (args: { device: Homey.Device }) => {
-        const store = args.device.getStore() as { starlingId: string };
+        const store = args.device.getStore() as Pick<DeviceStore, 'starlingId' | 'hubId'>;
         const hubManager = this.getHubManager();
-        await hubManager.setDeviceProperty(store.starlingId, 'isPaused', true);
+        await hubManager.setDeviceProperty(store.starlingId, 'isPaused', true, store.hubId);
       }
     );
 
     // Return to dock
     this.homey.flow.getActionCard('return_to_dock').registerRunListener(
       async (args: { device: Homey.Device }) => {
-        const store = args.device.getStore() as { starlingId: string };
+        const store = args.device.getStore() as Pick<DeviceStore, 'starlingId' | 'hubId'>;
         const hubManager = this.getHubManager();
-        await hubManager.setDeviceProperty(store.starlingId, 'returnToDock', true);
+        await hubManager.setDeviceProperty(store.starlingId, 'returnToDock', true, store.hubId);
       }
     );
   }

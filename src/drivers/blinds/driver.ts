@@ -13,6 +13,7 @@
 import Homey from 'homey';
 import { StarlingDriver } from '../../lib/drivers';
 import { DeviceCategory } from '../../lib/api/types';
+import { DeviceStore } from '../../lib/drivers/types';
 
 class BlindsDriver extends StarlingDriver {
   /**
@@ -41,10 +42,10 @@ class BlindsDriver extends StarlingDriver {
     // Set position
     this.homey.flow.getActionCard('set_position').registerRunListener(
       async (args: { device: Homey.Device; position: number }) => {
-        const store = args.device.getStore() as { starlingId: string };
+        const store = args.device.getStore() as Pick<DeviceStore, 'starlingId' | 'hubId'>;
         const hubManager = this.getHubManager();
         // Position argument is 0-100
-        await hubManager.setDeviceProperty(store.starlingId, 'position', args.position);
+        await hubManager.setDeviceProperty(store.starlingId, 'position', args.position, store.hubId);
       }
     );
   }

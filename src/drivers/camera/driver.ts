@@ -18,6 +18,7 @@
 import Homey from 'homey';
 import { StarlingDriver, StarlingPairingDevice } from '../../lib/drivers';
 import { DeviceCategory, CameraDevice } from '../../lib/api/types';
+import { DeviceStore } from '../../lib/drivers/types';
 
 class CameraDriver extends StarlingDriver {
   /**
@@ -107,18 +108,18 @@ class CameraDriver extends StarlingDriver {
     // Enable quiet time
     this.homey.flow.getActionCard('enable_quiet_time').registerRunListener(
       async (args: { device: Homey.Device }) => {
-        const store = args.device.getStore() as { starlingId: string };
+        const store = args.device.getStore() as Pick<DeviceStore, 'starlingId' | 'hubId'>;
         const hubManager = this.getHubManager();
-        await hubManager.setDeviceProperty(store.starlingId, 'quietTime', true);
+        await hubManager.setDeviceProperty(store.starlingId, 'quietTime', true, store.hubId);
       }
     );
 
     // Disable quiet time
     this.homey.flow.getActionCard('disable_quiet_time').registerRunListener(
       async (args: { device: Homey.Device }) => {
-        const store = args.device.getStore() as { starlingId: string };
+        const store = args.device.getStore() as Pick<DeviceStore, 'starlingId' | 'hubId'>;
         const hubManager = this.getHubManager();
-        await hubManager.setDeviceProperty(store.starlingId, 'quietTime', false);
+        await hubManager.setDeviceProperty(store.starlingId, 'quietTime', false, store.hubId);
       }
     );
   }

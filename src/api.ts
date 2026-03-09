@@ -257,7 +257,10 @@ async function updateHub({ homey, params, body }: ApiContext): Promise<HubStatus
     updates.host = request.host.trim();
   }
   if (request.apiKey !== undefined) {
-    updates.apiKey = request.apiKey.trim();
+    const trimmedApiKey = request.apiKey.trim();
+    if (trimmedApiKey) {
+      updates.apiKey = trimmedApiKey;
+    }
   }
   if (request.useHttps !== undefined) {
     updates.useHttps = request.useHttps;
@@ -290,9 +293,10 @@ async function deleteHub({ homey, params }: ApiContext): Promise<{ success: bool
 /**
  * POST /hubs/:id/test - Test connection to a hub
  */
-async function testHub({ homey, params }: ApiContext): Promise<TestConnectionResponse> {
+async function testHub({ homey, params, body }: ApiContext): Promise<TestConnectionResponse> {
   const hubManager = homey.app.getHubManager();
   const hubId = params.id;
+  const request = (body ?? {}) as Partial<HubRequest>;
 
   const connection = hubManager.getHub(hubId);
   if (!connection) {
@@ -301,11 +305,15 @@ async function testHub({ homey, params }: ApiContext): Promise<TestConnectionRes
 
   try {
     const config = connection.getConfig();
+    const host = request.host?.trim() || config.host;
+    const apiKey = request.apiKey?.trim() || config.apiKey;
+    const useHttps = request.useHttps ?? config.useHttps;
+    const port = request.port ?? (request.useHttps !== undefined ? (useHttps ? 3443 : 3080) : config.port);
     const client = new StarlingClient({
-      host: config.host,
-      port: config.port,
-      apiKey: config.apiKey,
-      useHttps: config.useHttps,
+      host,
+      port,
+      apiKey,
+      useHttps,
     });
 
     const status = await client.getStatus();

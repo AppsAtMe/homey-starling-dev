@@ -43,12 +43,12 @@ describe('HubManager', () => {
   };
 
   // Helper to create a fresh mock connection
-  const createMockConnection = () => ({
+  const createMockConnection = (config: HubConfig = testHubConfig) => ({
     connect: jest.fn().mockResolvedValue(undefined),
     disconnect: jest.fn().mockResolvedValue(undefined),
-    getConfig: jest.fn().mockReturnValue(testHubConfig),
+    getConfig: jest.fn().mockReturnValue(config),
     getStatus: jest.fn().mockReturnValue({
-      config: testHubConfig,
+      config,
       state: 'connected',
       isOnline: true,
       lastPoll: new Date(),
@@ -60,13 +60,14 @@ describe('HubManager', () => {
     }),
     getCachedDevices: jest.fn().mockReturnValue([]),
     getCachedDevice: jest.fn().mockReturnValue(undefined),
-    on: jest.fn(),
+    on: jest.fn().mockReturnThis(),
     setDeviceProperty: jest.fn().mockResolvedValue(undefined),
     getSnapshot: jest.fn().mockResolvedValue(Buffer.from('test')),
   });
 
   // Helper to create a fresh mock poller
   const createMockPoller = () => ({
+    on: jest.fn().mockReturnThis(),
     start: jest.fn(),
     stop: jest.fn(),
     refresh: jest.fn().mockResolvedValue({ success: true, changes: [] }),
@@ -258,6 +259,27 @@ describe('HubManager', () => {
       await expect(
         manager.setDeviceProperty('unknown', 'prop', 'value')
       ).rejects.toThrow('not found');
+    });
+
+    it('should route commands to the requested hub when hubId is provided', async () => {
+      const hub1Config: HubConfig = { ...testHubConfig, id: 'hub-1', name: 'Hub One' };
+      const hub2Config: HubConfig = { ...testHubConfig, id: 'hub-2', name: 'Hub Two' };
+      const hub1Connection = createMockConnection(hub1Config);
+      const hub2Connection = createMockConnection(hub2Config);
+
+      jest.mocked(HubConnection)
+        .mockImplementationOnce(() => hub1Connection as unknown as HubConnection)
+        .mockImplementationOnce(() => hub2Connection as unknown as HubConnection);
+
+      const manager = HubManager.getInstance(mockApp);
+      await manager.initialize();
+      await manager.addHub(hub1Config);
+      await manager.addHub(hub2Config);
+
+      await manager.setDeviceProperty('shared-device', 'isOn', true, 'hub-2');
+
+      expect(hub1Connection.setDeviceProperty).not.toHaveBeenCalled();
+      expect(hub2Connection.setDeviceProperty).toHaveBeenCalledWith('shared-device', 'isOn', true);
     });
   });
 });

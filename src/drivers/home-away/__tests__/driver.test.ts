@@ -46,11 +46,11 @@ describe('HomeAwayDriver flow cards', () => {
     expect(isAway).toBe(false);
 
     const device = {
-      getStore: () => ({ starlingId: 'device-1' }),
+      getStore: () => ({ starlingId: 'device-1', hubId: 'hub-1' }),
     };
 
     await actionHandlers.set_mode({ device, mode: 'away' });
-    expect(hubManager.setDeviceProperty).toHaveBeenCalledWith('device-1', 'mode', 'away');
+    expect(hubManager.setDeviceProperty).toHaveBeenCalledWith('device-1', 'mode', 'away', 'hub-1');
 
     await expect(actionHandlers.set_mode({ device, mode: 'invalid' })).rejects.toThrow('errors.invalid_home_away_mode');
   });

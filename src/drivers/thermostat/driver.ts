@@ -16,6 +16,7 @@
 import Homey from 'homey';
 import { StarlingDriver } from '../../lib/drivers';
 import { DeviceCategory, ThermostatDevice } from '../../lib/api/types';
+import { DeviceStore } from '../../lib/drivers/types';
 
 class ThermostatDriver extends StarlingDriver {
   /**
@@ -74,10 +75,10 @@ class ThermostatDriver extends StarlingDriver {
     // Set eco mode
     this.homey.flow.getActionCard('set_eco_mode').registerRunListener(
       async (args: { device: Homey.Device; enabled: string }) => {
-        const store = args.device.getStore() as { starlingId: string };
+        const store = args.device.getStore() as Pick<DeviceStore, 'starlingId' | 'hubId'>;
         const hubManager = this.getHubManager();
         const enabled = args.enabled === 'true';
-        await hubManager.setDeviceProperty(store.starlingId, 'ecoMode', enabled);
+        await hubManager.setDeviceProperty(store.starlingId, 'ecoMode', enabled, store.hubId);
       }
     );
   }

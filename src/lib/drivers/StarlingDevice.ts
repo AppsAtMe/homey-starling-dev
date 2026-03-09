@@ -265,7 +265,7 @@ abstract class StarlingDevice extends Homey.Device {
 
     try {
       // Send to Starling
-      await this.hubManager.setDeviceProperty(this.starlingId, property, value);
+      await this.hubManager.setDeviceProperty(this.starlingId, property, value, this.hubId);
       this.log(`Set ${property} = ${String(value)}`);
     } catch (error) {
       // Rollback on error

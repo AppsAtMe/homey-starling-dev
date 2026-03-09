@@ -22,7 +22,7 @@ export interface DeviceStore {
 export interface StarlingApp {
   triggerCommandFailed(deviceName: string, command: string, error: string): void;
   triggerHomeAwayChanged(mode: string): void;
-  triggerFaceDetected(personName: string, cameraId: string, cameraName: string): void;
+  triggerFaceDetected(personName: string, cameraId: string, cameraName: string, hubId: string): void;
 }
 
 /**
