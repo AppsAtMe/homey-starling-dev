@@ -35,6 +35,17 @@
     "url": "https://github.com/AppsAtMe/homey-starling-dev/issues"
   },
   "support": "https://github.com/AppsAtMe/homey-starling-dev/issues",
+  "changelog": {
+    "1.0.0": {
+      "en": "Initial release supporting all currently supported Nest Products as well as Google Home connected devices supported by the Starling Home Hub."
+    },
+    "1.0.1": {
+      "en": "Fixed app icon display. Fixed app images to remove black bars. Fixed Nest Protect battery status to use alarm_battery instead of measure_battery."
+    },
+    "1.0.2": {
+      "en": "Fixed app images - properly resized to maintain aspect ratio without cropping."
+    }
+  },
   "author": {
     "name": "Andrew R. Mitchell",
     "email": "apps@andrewrmitchell.com"

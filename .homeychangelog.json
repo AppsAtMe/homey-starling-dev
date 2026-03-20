@@ -8,9 +8,6 @@
   "1.0.2": {
     "en": "Fixed app images - properly resized to maintain aspect ratio without cropping."
   },
-  "1.0.2": {
-    "en": "Improved app description"
-  },
   "1.0.3": {
     "en": "Fixed API Key input screen. Improved error handling."
   },
@@ -21,6 +18,6 @@
     "en": "Fixed some logging errors"
   },
   "2.0.0": {
-      "en": "Upgraded to Starling API v2. This brings in all Google Home devices connected to you Starling Hub. Also added full support for live video and stills from camera class devices."
+    "en": "Upgraded to Starling API v2. This brings in all Google Home devices connected to you Starling Hub. Also added full support for live video and stills from camera class devices."
   }
 }
