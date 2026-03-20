@@ -34,6 +34,7 @@
   "bugs": {
     "url": "https://github.com/AppsAtMe/homey-starling-dev/issues"
   },
+  "support": "https://github.com/AppsAtMe/homey-starling-dev/issues",
   "author": {
     "name": "Andrew R. Mitchell",
     "email": "apps@andrewrmitchell.com"
