@@ -124,7 +124,7 @@ export interface SmokeCODevice extends BaseDevice {
   category: 'smoke_co_detector';
   smokeDetected: boolean;
   coDetected: boolean;
-  batteryLevel: number;
+  batteryStatus: 'normal' | 'low' | 'very low' | 'unknown';
 }
 
 // Sensor properties (multi-type)
