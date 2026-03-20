@@ -1,6 +1,6 @@
 {
   "1.0.0": {
-    "en": "Initial release supporting Nest Protect"
+    "en": "Initial release supporting all currently supported Nest Products as well as Google Home connected devices supported by the Starling Home Hub."
   },
   "1.0.1": {
     "en": "Updated driver icon"
