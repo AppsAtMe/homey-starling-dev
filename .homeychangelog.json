@@ -3,7 +3,7 @@
     "en": "Initial release supporting all currently supported Nest Products as well as Google Home connected devices supported by the Starling Home Hub."
   },
   "1.0.1": {
-    "en": "Updated driver icon"
+    "en": "Fixed app icon display. Fixed app images to remove black bars. Fixed Nest Protect battery status to use alarm_battery instead of measure_battery."
   },
   "1.0.2": {
     "en": "Improved app description"

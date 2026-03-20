@@ -1,6 +1,6 @@
 {
   "name": "com.eyecatch.googlenest.starling",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": ".homeybuild/app.js",
   "scripts": {
     "build": "tsc",
