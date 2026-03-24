@@ -233,7 +233,12 @@
     "set_error": "Google Home heeft de wijziging geweigerd.",
     "no_snapshot": "Camera snapshot niet beschikbaar.",
     "stream_refused": "Kon videostream niet starten.",
+    "command_failed": "Command failed for {{device}}.",
+    "device_offline": "Device is offline.",
     "hub_offline": "Hub reageert niet.",
+    "hub_not_connected": "Hub is not connected.",
+    "hub_not_found": "Hub not found.",
+    "no_home_away_device": "No Home/Away device found.",
     "rate_limited": "Te veel verzoeken. Even wachten.",
     "permission_denied": "Geen toestemming voor deze actie."
   },

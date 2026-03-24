@@ -233,4 +233,37 @@ describe('StarlingHomeHubApp', () => {
     expect(primaryHub.setDeviceProperty).toHaveBeenCalledWith('home-1', 'mode', 'away');
     expect(backupHub.setDeviceProperty).toHaveBeenCalledWith('home-2', 'mode', 'away');
   });
+
+  it('requires all Home/Away devices to match for the global condition', async () => {
+    const primaryHub = createHub('hub-1', 'Primary Hub', [
+      { id: 'home-1', name: 'Home', category: 'home_away_control', mode: 'home' },
+    ]);
+    const backupHub = createHub('hub-2', 'Backup Hub', [
+      { id: 'home-2', name: 'Home', category: 'home_away_control', mode: 'away' },
+    ]);
+    const hubManager = createHubManager([primaryHub, backupHub], hubEventHandlers);
+    HubManager.getInstance.mockReturnValue(hubManager);
+
+    await app.onInit();
+
+    expect(conditionCards.home_away_mode_is.runListener?.({ mode: 'home' })).toBe(false);
+    expect(conditionCards.home_away_mode_is.runListener?.({ mode: 'away' })).toBe(false);
+  });
+
+  it('fails the Home/Away action and condition when no Home/Away device exists', async () => {
+    const hub = createHub('hub-1', 'Primary Hub', [
+      { id: 'light-1', name: 'Light', category: 'light', isOnline: true },
+    ]);
+    const hubManager = createHubManager([hub], hubEventHandlers);
+    HubManager.getInstance.mockReturnValue(hubManager);
+
+    await app.onInit();
+
+    expect(() => conditionCards.home_away_mode_is.runListener?.({ mode: 'home' })).toThrow(
+      'errors.no_home_away_device'
+    );
+    await expect(actionCards.set_home_away_mode.runListener?.({ mode: 'away' })).rejects.toThrow(
+      'errors.no_home_away_device'
+    );
+  });
 });

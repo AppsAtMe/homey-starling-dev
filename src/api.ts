@@ -504,8 +504,8 @@ function exportDiagnostics({ homey }: ApiContext): DiagnosticsExportResponse {
   return {
     exportedAt: new Date().toISOString(),
     app: {
-      id: manifest?.id ?? 'com.eyecatch.googlenest.starling',
-      version: manifest?.version ?? '2.0.0',
+      id: manifest?.id ?? 'com.andrewrmitchell.starling',
+      version: manifest?.version ?? '1.0.2',
       sdk: manifest?.sdk ?? 3,
       platform,
     },

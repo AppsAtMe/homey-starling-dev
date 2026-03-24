@@ -233,7 +233,12 @@
     "set_error": "Google Home avvisade ändringen.",
     "no_snapshot": "Kamera-ögonblicksbild otillgänglig.",
     "stream_refused": "Kunde inte starta videoströmmen.",
+    "command_failed": "Command failed for {{device}}.",
+    "device_offline": "Device is offline.",
     "hub_offline": "Hubben svarar inte.",
+    "hub_not_connected": "Hub is not connected.",
+    "hub_not_found": "Hub not found.",
+    "no_home_away_device": "No Home/Away device found.",
     "rate_limited": "För många förfrågningar. Vänta.",
     "permission_denied": "Behörighet ej beviljad för denna åtgärd."
   },

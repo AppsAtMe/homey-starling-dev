@@ -153,16 +153,18 @@ class StarlingHomeHubApp extends Homey.App {
     const homeAwayModeCondition = this.homey.flow.getConditionCard('home_away_mode_is');
     homeAwayModeCondition.registerRunListener((args: { mode: string }) => {
       const hubs = this.hubManager.getAllHubs();
-      for (const hub of hubs) {
-        const devices = hub.getCachedDevices();
-        for (const device of devices) {
-          if (device.category === 'home_away_control') {
-            const homeAway = device as { mode?: string };
-            return homeAway.mode === args.mode;
-          }
-        }
+      const homeAwayDevices = hubs.flatMap((hub) =>
+        hub
+          .getCachedDevices()
+          .filter((device) => device.category === 'home_away_control')
+          .map((device) => device as { mode?: string })
+      );
+
+      if (homeAwayDevices.length === 0) {
+        throw new Error(this.homey.__('errors.no_home_away_device'));
       }
-      throw new Error(this.homey.__('errors.no_home_away_device'));
+
+      return homeAwayDevices.every((homeAway) => homeAway.mode === args.mode);
     });
 
     // ============================================================
@@ -187,26 +189,32 @@ class StarlingHomeHubApp extends Homey.App {
     // Set Home/Away mode action
     const setHomeAwayAction = this.homey.flow.getActionCard('set_home_away_mode');
     setHomeAwayAction.registerRunListener(async (args: { mode: string }) => {
-      const errors: string[] = [];
+      const failedHubs = new Set<string>();
       const hubs = this.hubManager.getAllHubs();
+      let hasHomeAwayDevice = false;
 
       for (const hub of hubs) {
         const devices = hub.getCachedDevices();
         for (const device of devices) {
           if (device.category === 'home_away_control') {
+            hasHomeAwayDevice = true;
             try {
               await hub.setDeviceProperty(device.id, 'mode', args.mode);
             } catch (error) {
               const hubName = hub.getConfig().name;
-              errors.push(hubName);
+              failedHubs.add(hubName);
               this.logger.error(`Failed to set home/away on hub ${hubName}:`, error as Error);
             }
           }
         }
       }
 
-      if (errors.length > 0) {
-        throw new Error(`Failed to set home/away mode on: ${errors.join(', ')}`);
+      if (!hasHomeAwayDevice) {
+        throw new Error(this.homey.__('errors.no_home_away_device'));
+      }
+
+      if (failedHubs.size > 0) {
+        throw new Error(`Failed to set home/away mode on: ${Array.from(failedHubs).join(', ')}`);
       }
     });
 

@@ -127,7 +127,7 @@ The default polling interval is **5 seconds**. This interval was chosen because:
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/iDad/starling-home-hub/issues)
+- **Issues:** [GitHub Issues](https://github.com/AppsAtMe/homey-starling-dev/issues)
 - **Starling Hub Support:** [starlinghome.io/support](https://www.starlinghome.io/support)
 
 ## License

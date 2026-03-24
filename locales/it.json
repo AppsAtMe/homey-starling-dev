@@ -233,7 +233,12 @@
     "set_error": "Google Home ha rifiutato la modifica.",
     "no_snapshot": "Foto della fotocamera non disponibile.",
     "stream_refused": "Impossibile avviare lo streaming video.",
+    "command_failed": "Command failed for {{device}}.",
+    "device_offline": "Device is offline.",
     "hub_offline": "L'hub non risponde.",
+    "hub_not_connected": "Hub is not connected.",
+    "hub_not_found": "Hub not found.",
+    "no_home_away_device": "No Home/Away device found.",
     "rate_limited": "Troppe richieste. Attendere prego.",
     "permission_denied": "Permesso non concesso per questa azione."
   },
